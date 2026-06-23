@@ -15,20 +15,30 @@
 
     <section class="screen active" data-screen="home">
       <header class="topbar">
-        <button class="ghost-button" type="button" aria-label="Menu">☰</button>
+        <span></span>
         <h1>✈ TripSplit</h1>
-        <button class="ghost-button" id="clearDataBtn" type="button" aria-label="Reset">⌁</button>
+        <button class="ghost-button nav-trigger" type="button" data-target="settings" aria-label="Settings">⚙</button>
       </header>
 
       <section class="trip-hero">
         <div class="trip-image" aria-hidden="true"></div>
         <div class="trip-card">
-          <form id="tripForm" class="trip-form">
-            <label class="visually-hidden" for="tripName">Trip name</label>
-            <input id="tripName" name="tripName" type="text" placeholder="Add trip name" autocomplete="off">
-            <button type="submit">Add Trip</button>
+          <button class="trip-toggle-button" id="toggleTripFormBtn" type="button">Add Trip</button>
+          <form id="tripForm" class="trip-form" hidden>
+            <label>
+              Trip name
+              <input id="tripName" name="tripName" type="text" placeholder="e.g. Summer Vacation" autocomplete="off">
+            </label>
+            <label>
+              Destination city
+              <input id="tripCity" name="tripCity" type="text" placeholder="e.g. Paris" autocomplete="off">
+            </label>
+            <button type="submit">Save Trip</button>
           </form>
-          <p id="tripTitle" class="trip-title empty-state">No trip name added.</p>
+          <div class="trip-details">
+            <p id="tripTitle" class="trip-title empty-state">No trip name added.</p>
+            <span id="tripCityLabel" class="trip-city-label">No destination city added.</span>
+          </div>
         </div>
       </section>
 
@@ -143,6 +153,25 @@
       <button class="whatsapp-button" id="shareBtn" type="button">Share Summary on WhatsApp</button>
     </section>
 
+    <section class="screen" data-screen="settings">
+      <header class="pagebar">
+        <button class="ghost-button nav-trigger" type="button" data-target="home" aria-label="Back">‹</button>
+        <h2>Settings</h2>
+        <span></span>
+      </header>
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Trip Settings</h2>
+        </div>
+        <button class="settings-action" id="showResetTripsBtn" type="button">Reset trip</button>
+        <div class="reset-trip-panel" id="resetTripPanel" hidden>
+          <p class="list-meta">Select the trip you want to reset.</p>
+          <div id="resetTripList" class="reset-trip-list empty-state">No trip added yet.</div>
+          <button class="danger-button" id="clearDataBtn" type="button" disabled>Reset selected trip</button>
+        </div>
+      </section>
+    </section>
+
     <nav class="tabbar" aria-label="Primary">
       <button class="tab-button active" type="button" data-target="home"><span>⌂</span>Home</button>
       <button class="tab-button" type="button" data-target="expenses"><span>▣</span>Expenses</button>
@@ -150,6 +179,17 @@
       <button class="tab-button" type="button" data-target="balances"><span>▤</span>Balances</button>
       <button class="tab-button" type="button" data-target="settle"><span>•••</span>More</button>
     </nav>
+
+    <div class="modal-backdrop" id="removeMemberModal" hidden>
+      <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="removeMemberTitle">
+        <h2 id="removeMemberTitle">Remove Member</h2>
+        <p id="removeMemberMessage">Are you sure you want to remove this member from this trip?</p>
+        <div class="modal-actions">
+          <button class="secondary-action" id="keepMemberBtn" type="button">Keep Member</button>
+          <button class="danger-action" id="confirmRemoveMemberBtn" type="button">Remove</button>
+        </div>
+      </section>
+    </div>
   </main>
 
   <script src="script.js"></script>

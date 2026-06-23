@@ -1,14 +1,19 @@
 const STORAGE_KEY = "tripSplitData";
+const PHOTO_CACHE_KEY = "tripSplitCityPhotoCache";
 const DEFAULT_TRIP_PHOTO = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80";
 
 const state = loadState();
+const photoCache = loadPhotoCache();
 
 const screens = document.querySelectorAll(".screen");
 const navButtons = document.querySelectorAll("[data-target]");
 const tabButtons = document.querySelectorAll(".tab-button");
+const toggleTripFormBtn = document.getElementById("toggleTripFormBtn");
 const tripForm = document.getElementById("tripForm");
 const tripName = document.getElementById("tripName");
+const tripCity = document.getElementById("tripCity");
 const tripTitle = document.getElementById("tripTitle");
+const tripCityLabel = document.getElementById("tripCityLabel");
 const memberForm = document.getElementById("memberForm");
 const memberName = document.getElementById("memberName");
 const membersList = document.getElementById("membersList");
@@ -30,19 +35,52 @@ const balancesList = document.getElementById("balancesList");
 const settlementsList = document.getElementById("settlementsList");
 const settlementCount = document.getElementById("settlementCount");
 const shareBtn = document.getElementById("shareBtn");
+const showResetTripsBtn = document.getElementById("showResetTripsBtn");
+const resetTripPanel = document.getElementById("resetTripPanel");
+const resetTripList = document.getElementById("resetTripList");
 const clearDataBtn = document.getElementById("clearDataBtn");
+const removeMemberModal = document.getElementById("removeMemberModal");
+const removeMemberMessage = document.getElementById("removeMemberMessage");
+const keepMemberBtn = document.getElementById("keepMemberBtn");
+const confirmRemoveMemberBtn = document.getElementById("confirmRemoveMemberBtn");
+
+let pendingRemoveMemberId = "";
+let tripPhotoTimer = 0;
 
 navButtons.forEach((button) => {
   button.addEventListener("click", () => showScreen(button.dataset.target));
 });
 
+toggleTripFormBtn.addEventListener("click", () => {
+  tripForm.hidden = !tripForm.hidden;
+  toggleTripFormBtn.textContent = tripForm.hidden ? "Add Trip" : "Close";
+});
+
 tripForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const name = tripName.value.trim();
-  if (!name) return;
-  state.tripName = name;
+  const city = normalizeCity(tripCity.value);
+  if (!name && !city) return;
+  if (name) state.tripName = name;
+  if (city !== "General") state.tripCity = city;
   tripName.value = "";
+  tripCity.value = "";
+  tripForm.hidden = true;
+  toggleTripFormBtn.textContent = "Add Trip";
   saveAndRender();
+});
+
+tripCity.addEventListener("input", () => {
+  const city = normalizeCity(tripCity.value);
+  window.clearTimeout(tripPhotoTimer);
+  tripPhotoTimer = window.setTimeout(() => {
+    if (city === "General") {
+      updateTripPhoto(state.tripCity);
+      return;
+    }
+    state.tripCity = city;
+    saveAndRender();
+  }, 450);
 });
 
 memberForm.addEventListener("submit", (event) => {
@@ -95,18 +133,42 @@ shareBtn.addEventListener("click", () => {
   window.open(url, "_blank", "noopener,noreferrer");
 });
 
+showResetTripsBtn.addEventListener("click", () => {
+  resetTripPanel.hidden = !resetTripPanel.hidden;
+  renderResetTrips();
+});
+
+resetTripList.addEventListener("change", () => {
+  clearDataBtn.disabled = !resetTripList.querySelector("input:checked");
+});
+
 clearDataBtn.addEventListener("click", () => {
-  if (!confirm("Clear all trip data?")) return;
+  const selectedTrip = resetTripList.querySelector("input:checked");
+  if (!selectedTrip) return;
+  const tripName = selectedTrip.value;
+  if (!confirm(`Reset "${tripName}"? This will clear its members and expenses.`)) return;
   state.tripName = "";
+  state.tripCity = "";
   state.members = [];
   state.expenses = [];
   saveAndRender();
+  resetTripPanel.hidden = true;
   showScreen("home");
+});
+
+keepMemberBtn.addEventListener("click", closeRemoveMemberModal);
+
+removeMemberModal.addEventListener("click", (event) => {
+  if (event.target === removeMemberModal) closeRemoveMemberModal();
+});
+
+confirmRemoveMemberBtn.addEventListener("click", () => {
+  removeMemberAfterConfirmation(pendingRemoveMemberId);
 });
 
 function loadState() {
   const saved = localStorage.getItem(STORAGE_KEY);
-  if (!saved) return { tripName: "", members: [], expenses: [] };
+  if (!saved) return { tripName: "", tripCity: "", members: [], expenses: [] };
 
   try {
     const parsed = JSON.parse(saved);
@@ -115,17 +177,34 @@ function loadState() {
 
     if (hasOldDemoData) {
       localStorage.removeItem(STORAGE_KEY);
-      return { tripName: "", members: [], expenses: [] };
+      return { tripName: "", tripCity: "", members: [], expenses: [] };
     }
 
     return {
       tripName: typeof parsed.tripName === "string" ? parsed.tripName : "",
+      tripCity: typeof parsed.tripCity === "string" ? parsed.tripCity : "",
       members,
       expenses: Array.isArray(parsed.expenses) ? parsed.expenses : []
     };
   } catch {
-    return { tripName: "", members: [], expenses: [] };
+    return { tripName: "", tripCity: "", members: [], expenses: [] };
   }
+}
+
+function loadPhotoCache() {
+  const saved = localStorage.getItem(PHOTO_CACHE_KEY);
+  if (!saved) return {};
+
+  try {
+    const parsed = JSON.parse(saved);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePhotoCache() {
+  localStorage.setItem(PHOTO_CACHE_KEY, JSON.stringify(photoCache));
 }
 
 function saveAndRender() {
@@ -149,38 +228,70 @@ function render() {
   renderExpenseForm();
   renderExpenses();
   renderSummary();
+  renderResetTrips();
 }
 
 function renderTrip() {
-  updateTripPhoto();
+  updateTripPhoto(state.tripCity);
 
   if (!state.tripName) {
     tripTitle.className = "trip-title empty-state";
     tripTitle.textContent = "No trip name added.";
+  } else {
+    tripTitle.className = "trip-title";
+    tripTitle.textContent = state.tripName;
+  }
+
+  tripCityLabel.textContent = state.tripCity || "No destination city added.";
+}
+
+function renderResetTrips() {
+  if (!state.tripName) {
+    resetTripList.className = "reset-trip-list empty-state";
+    resetTripList.textContent = "No trip added yet.";
+    clearDataBtn.disabled = true;
     return;
   }
 
-  tripTitle.className = "trip-title";
-  tripTitle.textContent = state.tripName;
+  resetTripList.className = "reset-trip-list";
+  resetTripList.innerHTML = `
+    <label class="reset-trip-option">
+      <input type="radio" name="resetTrip" value="${escapeHtml(state.tripName)}">
+      <span>${escapeHtml(state.tripName)}</span>
+    </label>
+  `;
+  clearDataBtn.disabled = true;
 }
 
-function updateTripPhoto() {
-  if (!state.tripName) {
+function updateTripPhoto(city) {
+  const normalizedCity = normalizeCity(city || "");
+
+  if (normalizedCity === "General") {
     setTripPhoto(DEFAULT_TRIP_PHOTO);
     return;
   }
 
-  const query = encodeURIComponent(`${state.tripName} city travel landmark`);
+  const cacheKey = normalizedCity.toLowerCase();
+  if (photoCache[cacheKey]) {
+    setTripPhoto(photoCache[cacheKey]);
+    return;
+  }
+
+  const query = encodeURIComponent(`${normalizedCity} city skyline travel landscape`);
   const photoUrl = `https://source.unsplash.com/900x500/?${query}`;
   const testImage = new Image();
 
-  testImage.onload = () => setTripPhoto(photoUrl);
+  testImage.onload = () => {
+    photoCache[cacheKey] = photoUrl;
+    savePhotoCache();
+    setTripPhoto(photoUrl);
+  };
   testImage.onerror = () => setTripPhoto(DEFAULT_TRIP_PHOTO);
   testImage.src = photoUrl;
 }
 
 function setTripPhoto(url) {
-  document.documentElement.style.setProperty("--trip-photo", `url("${url}")`);
+  document.documentElement.style.setProperty("--trip-photo", `url("${url.replaceAll('"', "%22")}")`);
 }
 
 function renderMembers() {
@@ -458,16 +569,34 @@ function buildSummaryText() {
 }
 
 function removeMember(memberId) {
+  const member = state.members.find((item) => item.id === memberId);
+  if (!member) return;
+
+  pendingRemoveMemberId = memberId;
+  removeMemberMessage.textContent = `Are you sure you want to remove ${member.name} from this trip?`;
+  removeMemberModal.hidden = false;
+}
+
+function closeRemoveMemberModal() {
+  pendingRemoveMemberId = "";
+  removeMemberModal.hidden = true;
+}
+
+function removeMemberAfterConfirmation(memberId) {
+  if (!memberId) return;
+
   const isUsed = state.expenses.some((expense) => (
     expense.payerId === memberId || expense.sharedBy.includes(memberId)
   ));
 
   if (isUsed) {
     alert("This member is used in an expense. Delete related expenses first.");
+    closeRemoveMemberModal();
     return;
   }
 
   state.members = state.members.filter((member) => member.id !== memberId);
+  closeRemoveMemberModal();
   saveAndRender();
 }
 
