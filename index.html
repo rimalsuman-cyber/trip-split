@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TripSplit</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="phone-shell">
+    <header class="status-bar" aria-hidden="true">
+      <span>9:41</span>
+      <span>||| WiFi ▰</span>
+    </header>
+
+    <section class="screen active" data-screen="home">
+      <header class="topbar">
+        <button class="ghost-button" type="button" aria-label="Menu">☰</button>
+        <h1>✈ TripSplit</h1>
+        <button class="ghost-button" id="clearDataBtn" type="button" aria-label="Reset">⌁</button>
+      </header>
+
+      <section class="trip-hero">
+        <div class="trip-image" aria-hidden="true"></div>
+        <div class="trip-card">
+          <form id="tripForm" class="trip-form">
+            <label class="visually-hidden" for="tripName">Trip name</label>
+            <input id="tripName" name="tripName" type="text" placeholder="Add trip name" autocomplete="off">
+            <button type="submit">Add Trip</button>
+          </form>
+          <p id="tripTitle" class="trip-title empty-state">No trip name added.</p>
+        </div>
+      </section>
+
+      <section class="total-card">
+        <div class="total-card-top">
+          <span>Total Trip Expense</span>
+          <button class="link-button nav-trigger" type="button" data-target="expenses">All expenses ›</button>
+        </div>
+        <strong id="homeTotalExpense">$0.00</strong>
+        <div class="stats-grid">
+          <div><span>Expenses</span><strong id="homeExpenseCount">0</strong></div>
+          <div><span>Members</span><strong id="homeMemberCount">0</strong></div>
+          <div><span>You paid</span><strong id="youPaid">$0.00</strong></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Members</h2>
+          <span id="memberCount">0 people</span>
+        </div>
+        <form id="memberForm" class="inline-form">
+          <label class="visually-hidden" for="memberName">Member name</label>
+          <input id="memberName" name="memberName" type="text" placeholder="Add a friend" autocomplete="off" required>
+          <button type="submit">Add</button>
+        </form>
+        <div id="membersList" class="chip-list empty-state">No members yet.</div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Balances</h2>
+          <button class="link-button nav-trigger" type="button" data-target="balances">See all</button>
+        </div>
+        <div id="homeBalancesList" class="stack-list empty-state">Balances will appear here.</div>
+      </section>
+
+      <button class="primary-button nav-trigger" type="button" data-target="add">＋ Add Expense</button>
+    </section>
+
+    <section class="screen" data-screen="add">
+      <header class="pagebar">
+        <button class="ghost-button nav-trigger" type="button" data-target="home" aria-label="Back">‹</button>
+        <h2>Add Expense</h2>
+        <span></span>
+      </header>
+
+      <form id="expenseForm" class="expense-form">
+        <label class="input-card">
+          <span>Expense Title</span>
+          <input id="expenseTitle" type="text" placeholder="e.g. Dinner, Hotel, Taxi" required>
+        </label>
+        <label class="input-card">
+          <span>City</span>
+          <input id="expenseCity" type="text" placeholder="e.g. Paris, Rome, Tokyo" required>
+        </label>
+        <label class="input-card">
+          <span>Amount ($)</span>
+          <input id="expenseAmount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
+        </label>
+        <label class="input-card">
+          <span>Paid By</span>
+          <select id="expensePayer" required></select>
+        </label>
+        <fieldset class="input-card">
+          <legend>Split Among <span>Select people who shared this expense</span></legend>
+          <div id="sharedPeople" class="check-list empty-state">Add members first.</div>
+        </fieldset>
+        <button class="primary-button save-button" type="submit">Save Expense</button>
+      </form>
+    </section>
+
+    <section class="screen" data-screen="expenses">
+      <header class="pagebar">
+        <span></span>
+        <h2>Expenses</h2>
+        <button class="ghost-button" type="button" aria-label="Search">⌕</button>
+      </header>
+      <div class="filter-row">
+        <button class="active" type="button">All</button>
+        <button type="button">This Week</button>
+        <button type="button">This Trip</button>
+      </div>
+      <div id="expensesList" class="expense-list empty-state">No expenses yet.</div>
+    </section>
+
+    <section class="screen" data-screen="balances">
+      <header class="pagebar">
+        <button class="ghost-button nav-trigger" type="button" data-target="home" aria-label="Back">‹</button>
+        <h2>Balances</h2>
+        <span></span>
+      </header>
+      <section class="total-card compact">
+        <span>Total Trip Expense</span>
+        <strong id="totalExpense">$0.00</strong>
+      </section>
+      <div id="balancesList" class="balance-list empty-state">Balances will appear here.</div>
+    </section>
+
+    <section class="screen" data-screen="settle">
+      <header class="pagebar">
+        <button class="ghost-button nav-trigger" type="button" data-target="balances" aria-label="Back">‹</button>
+        <h2>Who Pays Whom</h2>
+        <span></span>
+      </header>
+      <section class="settle-note">
+        <strong>Simplest way to settle up</strong>
+        <span id="settlementCount">0 transactions</span>
+      </section>
+      <div id="settlementsList" class="settlement-list empty-state">Nothing to settle yet.</div>
+      <p class="tip">Once these payments are made, all balances will be settled.</p>
+      <button class="whatsapp-button" id="shareBtn" type="button">Share Summary on WhatsApp</button>
+    </section>
+
+    <nav class="tabbar" aria-label="Primary">
+      <button class="tab-button active" type="button" data-target="home"><span>⌂</span>Home</button>
+      <button class="tab-button" type="button" data-target="expenses"><span>▣</span>Expenses</button>
+      <button class="tab-button add-tab" type="button" data-target="add"><span>＋</span>Add</button>
+      <button class="tab-button" type="button" data-target="balances"><span>▤</span>Balances</button>
+      <button class="tab-button" type="button" data-target="settle"><span>•••</span>More</button>
+    </nav>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
